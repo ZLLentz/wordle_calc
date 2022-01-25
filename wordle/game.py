@@ -22,7 +22,7 @@ class WordEval:
     correct: bool
 
     @classmethod
-    def from_guess(cls, guess, answer):
+    def from_guess(cls, guess: str, answer: str) -> WordEval:
         eval = []
         correct = True
         for letter, ans in zip(guess, answer):
@@ -39,6 +39,19 @@ class WordEval:
             eval=eval,
             correct=correct,
         )
+
+    def allows(self, word: str) -> bool:
+        for guess, ans, eval in zip(word, self.word, self.eval):
+            if eval == LetterEval.GOOD:
+                if guess != ans:
+                    return False
+            elif eval == LetterEval.MOVED:
+                if guess == ans or ans not in word:
+                    return False
+            elif eval == LetterEval.WRONG:
+                if ans in word:
+                    return False
+        return True
 
     def __str__(self) -> str:
         text = ''
@@ -60,6 +73,7 @@ class SingleGame:
     clues: list[WordEval]
     words: list[str]
     running: bool = True
+    victory: bool = False
 
     @classmethod
     def begin(cls, answer: Optional[str] = None) -> SingleGame:
@@ -79,6 +93,7 @@ class SingleGame:
         self.clues.append(clue)
         if clue.correct or len(self.clues) >= 6:
             self.running = False
+            self.victory = clue.correct
         return clue
 
     def __str__(self) -> str:
