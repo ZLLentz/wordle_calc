@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Optional
 from random import choice
 
+from .words import get_words
+
 
 class LetterEval(Enum):
     WRONG = 0
@@ -55,7 +57,7 @@ class SingleGame:
 
     @classmethod
     def begin(cls, answer: Optional[str] = None) -> SingleGame:
-        words = cls.get_words()
+        words = get_words()
         if answer is None:
             answer = choice(words)
         return SingleGame(
@@ -63,12 +65,6 @@ class SingleGame:
             clues=[],
             words=words,
         )
-
-    @staticmethod
-    def get_words():
-        words_file = Path(__file__).parent / 'sgb-words.txt'
-        with words_file.open('r') as fd:
-            return fd.read().splitlines()
 
     def make_guess(self, guess: str) -> Optional[WordEval]:
         if guess not in self.words:
