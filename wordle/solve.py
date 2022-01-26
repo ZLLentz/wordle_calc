@@ -117,9 +117,7 @@ class BruteForce(Strategy):
         else:
             proc_words = all_words
         cpus = multiprocessing.cpu_count() - 1
-        print(f'Spawning process pool with {cpus} cpus...')
         with multiprocessing.Pool(cpus) as pool:
-            print('Spawned process pool')
             scores = pool.imap_unordered(
                 partial(
                     BruteForce._check_proc,
