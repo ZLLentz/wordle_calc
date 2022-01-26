@@ -129,8 +129,10 @@ class BruteForce(Strategy):
             best_score = 0
             for word, score in scores:
                 if score > best_score:
+                    if do_print:
+                        print(f"New record! Score for {word} is {score}!")
                     best_word = word
-                    best_score = best_score
+                    best_score = score
         return best_word
 
     @staticmethod
