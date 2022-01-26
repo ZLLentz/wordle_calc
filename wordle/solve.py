@@ -1,7 +1,7 @@
-from ast import expr_context
+import multiprocessing
 import time
 from collections import defaultdict
-from tracemalloc import start
+from functools import partial
 
 from .game import SingleGame, WordEval
 from .words import get_words
@@ -112,29 +112,35 @@ class BruteForce(Strategy):
     
     @staticmethod
     def brute_force(words, all_words, do_print=True):
-        start_time = time.monotonic()
-        best_word = words[0]
-        best_score = 0
-        for i, word in enumerate(all_words):
-            if do_print:
-                elapsed = (time.monotonic() - start_time) / 60
-                try:
-                    per_word = elapsed / i
-                except ZeroDivisionError:
-                    per_word = 0.0
-                total = per_word * len(all_words)
-                remaining = total - elapsed
-                print(
-                    f'Checking {word} ({i+1}/{len(all_words)}), '
-                    f'Elapsed {elapsed:.0f} mins, ',
-                    f'Estimating {remaining:.0f} mins to go in guess '
-                    f'(Expected total: {total:.0f} mins)',
-                )
-            word_score = BruteForce.check_one(word, words)
-            if word_score > best_score:
-                best_score = word_score
-                best_word = word
+        if do_print:
+            proc_words = NoisyList(all_words)
+        else:
+            proc_words = all_words
+        cpus = multiprocessing.cpu_count() - 1
+        print(f'Spawning process pool with {cpus} cpus...')
+        with multiprocessing.Pool(cpus) as pool:
+            print('Spawned process pool')
+            scores = pool.imap_unordered(
+                partial(
+                    BruteForce._check_proc,
+                    remaining_ok=words,
+                ),
+                proc_words,
+            )
+            best_word = all_words[0]
+            best_score = 0
+            for word, score in scores:
+                if score > best_score:
+                    best_word = word
+                    best_score = best_score
         return best_word
+
+    @staticmethod
+    def _check_proc(word, remaining_ok) -> tuple[str, int]:
+        return word, BruteForce.check_one(
+            word,
+            remaining_ok,
+        )
 
     @staticmethod
     def check_one(word, remaining_ok) -> int:
@@ -153,7 +159,32 @@ class BruteForce(Strategy):
 
     @staticmethod
     def precompute() -> str:
+        print('Running precompute...')
         words = get_words()
         ans = BruteForce.brute_force(words, words)
         print(f'Best word is {ans}')
         return ans
+
+
+class NoisyList:
+    def __init__(self, words):
+        self.words = words
+        self.reinit()
+
+    def reinit(self):
+        self._iter_words = iter(self.words)
+        self.start = time.monotonic()
+        self.count = 0
+
+    def __iter__(self):
+        self.reinit()
+        return self
+
+    def __next__(self):
+        word = next(self._iter_words)
+        self.count += 1
+        print(
+            f'Doing {word} ({self.count} / {len(self.words)}), '
+            f'{(time.monotonic() - self.start) / 60:.1f} mins elapsed'
+        )
+        return word
