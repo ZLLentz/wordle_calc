@@ -7,6 +7,7 @@ if __name__ == "__main__":
     parser = ArgumentParser('world_calc')
     parser.add_argument('--word', action='store', default=None)
     parser.add_argument('--strategy', action='store', default=None)
+    parser.add_argument('--method', action='store', default=None)
     parser.add_argument('--all-words', action='store_true')
     args = parser.parse_args()
     if args.strategy is None:
@@ -22,8 +23,12 @@ if __name__ == "__main__":
         print(f'\nAnswer was {game_instance.answer}')
     else:
         SolverClass = getattr(solve, args.strategy)
-        solver_inst = SolverClass()
-        if args.all_words:
-            solver_inst.simulate_all_games()
+        if args.method is None:
+            solver_inst = SolverClass()
+            if args.all_words:
+                solver_inst.simulate_all_games()
+            else:
+                solver_inst.simulate_game(args.word)
         else:
-            solver_inst.simulate_game(args.word)
+            callable = getattr(SolverClass, args.method)
+            callable()
