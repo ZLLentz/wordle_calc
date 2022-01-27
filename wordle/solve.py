@@ -17,7 +17,10 @@ class Strategy:
 
     def simulate_all_games(self) -> dict[int: list[str]]:
         all_words = get_words()
-        logger.info(f"Simulating all {len(all_words)} games.")
+        logger.info(
+            "Simulating all %s games.",
+            len(all_words)
+        )
         results = defaultdict(list)
         incr = 0
         count = 0
@@ -130,7 +133,7 @@ class BruteForce(Strategy):
             best_score = 0
             for word, score in scores:
                 if score > best_score:
-                    logger.spam(f"New record! Score for {word} is {score}!")
+                    logger.debug("New record! Score for %s is %s!", word, score)
                     best_word = word
                     best_score = score
         return best_word
@@ -162,7 +165,7 @@ class BruteForce(Strategy):
         logger.info('Running precompute...')
         words = get_words()
         ans = BruteForce.brute_force(words, words)
-        logger.info(f'Best word is {ans}')
+        logger.info('Best word is %s', ans)
         return ans
 
 
@@ -184,7 +187,10 @@ class NoisyList:
         word = next(self._iter_words)
         self.count += 1
         logger.spam(
-            f'Doing {word} ({self.count} / {len(self.words)}), '
-            f'{(time.monotonic() - self.start) / 60:.1f} mins elapsed',
+            'Doing %s, (%d / %d), %.2f mins elapsed',
+            word,
+            self.count,
+            len(self.words),
+            (time.monotonic() - self.start) / 60,
         )
         return word
