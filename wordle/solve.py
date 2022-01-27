@@ -96,7 +96,7 @@ class BruteForce(Strategy):
     Pick the word with the highest avg possible words removed
     for all the possible answers.
     """
-    precalculated = 'siren'
+    precalculated = 'tares'
 
     def __init__(self):
         self.all_words = get_words()
