@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
-from pathlib import Path
+from enum import IntEnum
 from typing import Optional
 from random import choice
 import logging
@@ -12,7 +11,7 @@ from .words import get_words
 logger = logging.getLogger(__name__)
 
 
-class LetterEval(Enum):
+class LetterEval(IntEnum):
     WRONG = 0
     MOVED = 1
     GOOD = 2
@@ -23,6 +22,9 @@ class WordEval:
     word: str
     eval: list[LetterEval]
     correct: bool
+
+    def __post_init__(self):
+        self.eval_map = self.get_eval_map()
 
     @classmethod
     def from_guess(cls, guess: str, answer: str) -> WordEval:
@@ -43,17 +45,28 @@ class WordEval:
             correct=correct,
         )
 
+    def get_eval_map(self):
+        final_map = {}
+        for eval_int in (LetterEval.GOOD, LetterEval.MOVED, LetterEval.WRONG):
+            final_map[eval_int] = [
+                index for index, eval in enumerate(self.eval)
+                if eval == eval_int
+            ]
+        return final_map
+
     def allows(self, word: str) -> bool:
-        for guess, ans, eval in zip(word, self.word, self.eval):
-            if eval == LetterEval.WRONG:
-                if ans in word:
-                    return False
-            elif eval == LetterEval.MOVED:
-                if guess == ans or ans not in word:
-                    return False
-            elif eval == LetterEval.GOOD:
-                if guess != ans:
-                    return False
+        for index in self.eval_map[LetterEval.GOOD]:
+            if word[index] != self.word[index]:
+                return False
+        for index in self.eval_map[LetterEval.MOVED]:
+            if (
+                word[index] == self.word[index]
+                or self.word[index] not in word
+            ):
+                return False
+        for index in self.eval_map[LetterEval.WRONG]:
+            if self.word[index] in word:
+                return False
         return True
 
     def __str__(self) -> str:
