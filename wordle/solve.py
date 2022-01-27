@@ -22,7 +22,7 @@ class Strategy:
             "Simulating all %s games.",
             len(all_words)
         )
-        results = defaultdict(list)
+        results = {1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: []}
         full_incr = len(all_words) / 100
         incr = full_incr
         count = 0
@@ -43,7 +43,7 @@ class Strategy:
                 (time.monotonic() - start) / 60,
             )
         logger.info("Our score is:")
-        logger.info(sorted({val: len(words) for val, words in results.items()}))
+        logger.info({val: len(words) for val, words in results.items()})
         logger.info("We got these words in 1 guess:")
         logger.info(results[1])
         logger.info("We got these words in 2 guesses:")

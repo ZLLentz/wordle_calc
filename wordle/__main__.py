@@ -5,8 +5,9 @@ from pstats import Stats, SortKey
 import logging
 import time
 
-from .game import SingleGame
 from . import solve
+from .analyze import user_analysis
+from .game import SingleGame
 
 if __name__ == "__main__":
     parser = ArgumentParser('world_calc')
@@ -16,6 +17,7 @@ if __name__ == "__main__":
     parser.add_argument('--all-words', action='store_true')
     parser.add_argument('--time', action='store_true')
     parser.add_argument('--profile', action='store_true')
+    parser.add_argument('--analyze', action='extend', nargs='*')
     parser.add_argument('--verbose', '-v', action='count', default=0)
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO - (args.verbose * 10))
@@ -25,18 +27,7 @@ if __name__ == "__main__":
         profiler.enable()
     if args.time:
         start_time = time.monotonic()
-    if args.strategy is None:
-        game_instance = SingleGame.begin(args.word)
-        print()
-        while game_instance.running:
-            print(game_instance)
-            print()
-            guess = input()
-            print()
-            game_instance.make_guess(guess)
-        print(game_instance)
-        print(f'\nAnswer was {game_instance.answer}')
-    else:
+    if args.strategy is not None:
         SolverClass = getattr(solve, args.strategy)
         if args.method is None:
             solver_inst = SolverClass()
@@ -48,6 +39,24 @@ if __name__ == "__main__":
         else:
             callable = getattr(SolverClass, args.method)
             callable()
+    elif args.analyze:
+        game_instance = SingleGame.begin(args.word)
+        for word in args.analyze:
+            game_instance.make_guess(word)
+        user_analysis(game_instance)
+    else:
+        game_instance = SingleGame.begin(args.word)
+        print()
+        while game_instance.running:
+            print(game_instance)
+            print()
+            guess = input()
+            print()
+            game_instance.make_guess(guess)
+        print(game_instance)
+        print(f'\nAnswer was {game_instance.answer}')
+        if args.analyze is not None:
+            user_analysis(game_instance)
     if args.time:
         print(f'{time.monotonic() - start_time}s elapsed.')
     if args.profile:
