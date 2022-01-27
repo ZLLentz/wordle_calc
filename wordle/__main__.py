@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import logging
 import time
 
 from .game import SingleGame
@@ -11,7 +12,10 @@ if __name__ == "__main__":
     parser.add_argument('--method', action='store', default=None)
     parser.add_argument('--all-words', action='store_true')
     parser.add_argument('--time', action='store_true')
+    parser.add_argument('--verbose', '-v', action='count', default=0)
     args = parser.parse_args()
+    logging.basicConfig(level=logging.INFO - (args.verbose * 10))
+    logging.addLevelName(5, 'spam')
     if args.time:
         start_time = time.monotonic()
     if args.strategy is None:

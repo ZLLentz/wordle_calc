@@ -1,3 +1,4 @@
+import logging
 import multiprocessing
 import time
 from collections import defaultdict
@@ -6,6 +7,9 @@ from functools import partial
 from .game import SingleGame, WordEval
 from .words import get_words
 
+logger = logging.getLogger(__name__)
+logger.spam = partial(logger.log, 5)
+
 
 class Strategy:
     def guess(self) -> str:
@@ -13,32 +17,31 @@ class Strategy:
 
     def simulate_all_games(self) -> dict[int: list[str]]:
         all_words = get_words()
-        print(f"Simulating all {len(all_words)} games.")
+        logger.info(f"Simulating all {len(all_words)} games.")
         results = defaultdict(list)
         incr = 0
         count = 0
         for word in all_words:
-            results[self.simulate_game(word, do_print=False)].append(word)
+            results[self.simulate_game(word)].append(word)
             count += 1
             incr -= 1
             if incr <= 0:
                 incr = len(all_words) / 10
-                print(f'Simulated {count} games...')
-        print("Our score is:")
-        print(sorted({val: len(words) for val, words in results.items()}))
-        print("We got these words in 1 guess:")
-        print(results[1])
-        print("We got these words in 2 guesses:")
-        print(results[2])
-        print("We failed to solve these words:")
-        print(results[7])
+                logger.info(f'Simulated {count} games...')
+        logger.info("Our score is:")
+        logger.info(sorted({val: len(words) for val, words in results.items()}))
+        logger.info("We got these words in 1 guess:")
+        logger.info(results[1])
+        logger.info("We got these words in 2 guesses:")
+        logger.info(results[2])
+        logger.info("We failed to solve these words:")
+        logger.info(results[7])
 
-    def simulate_game(self, answer, do_print=True) -> int:
+    def simulate_game(self, answer) -> int:
         self.initialize_game(answer)
         while self.game_instance.running:
             self.simulate_turn()
-        if do_print:
-            print(self.game_instance)
+        logger.info('\n%s', self.game_instance)
         if self.game_instance.victory:
             return len(self.game_instance.clues)
         else:
@@ -50,6 +53,7 @@ class Strategy:
 
     def simulate_turn(self):
         self.game_instance.make_guess(self.guess())
+        logger.debug('\n%s', self.game_instance)
         self.words = prune_words(self.words, self.game_instance.clues)
 
 
@@ -58,6 +62,7 @@ def prune_words(words: list[str], clues: list[WordEval]) -> list[str]:
     for word in words:
         if all(clue.allows(word) for clue in clues):
             new_words.append(word)
+    logger.debug('Remaining words: %s', new_words)
     return new_words
 
 
@@ -108,14 +113,10 @@ class BruteForce(Strategy):
             return self.words[0]
         if len(self.game_instance.clues) == 0:
             return self.precalculated
-        return self.brute_force(self.words, self.all_words, do_print=False)
+        return self.brute_force(self.words, self.all_words)
     
     @staticmethod
-    def brute_force(words, all_words, do_print=True):
-        if do_print:
-            proc_words = NoisyList(all_words)
-        else:
-            proc_words = all_words
+    def brute_force(words, all_words):
         cpus = multiprocessing.cpu_count() - 1
         with multiprocessing.Pool(cpus) as pool:
             scores = pool.imap_unordered(
@@ -123,14 +124,13 @@ class BruteForce(Strategy):
                     BruteForce._check_proc,
                     remaining_ok=words,
                 ),
-                proc_words,
+                NoisyList(all_words),
             )
             best_word = all_words[0]
             best_score = 0
             for word, score in scores:
                 if score > best_score:
-                    if do_print:
-                        print(f"New record! Score for {word} is {score}!")
+                    logger.spam(f"New record! Score for {word} is {score}!")
                     best_word = word
                     best_score = score
         return best_word
@@ -159,10 +159,10 @@ class BruteForce(Strategy):
 
     @staticmethod
     def precompute() -> str:
-        print('Running precompute...')
+        logger.info('Running precompute...')
         words = get_words()
         ans = BruteForce.brute_force(words, words)
-        print(f'Best word is {ans}')
+        logger.info(f'Best word is {ans}')
         return ans
 
 
@@ -183,8 +183,8 @@ class NoisyList:
     def __next__(self):
         word = next(self._iter_words)
         self.count += 1
-        print(
+        logger.spam(
             f'Doing {word} ({self.count} / {len(self.words)}), '
-            f'{(time.monotonic() - self.start) / 60:.1f} mins elapsed'
+            f'{(time.monotonic() - self.start) / 60:.1f} mins elapsed',
         )
         return word

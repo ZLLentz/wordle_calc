@@ -5,8 +5,11 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 from random import choice
+import logging
 
 from .words import get_words
+
+logger = logging.getLogger(__name__)
 
 
 class LetterEval(Enum):
@@ -87,11 +90,13 @@ class SingleGame:
         )
 
     def make_guess(self, guess: str) -> Optional[WordEval]:
+        logger.debug('Guessed %s', guess)
         if guess not in self.words:
             return None
         clue = WordEval.from_guess(guess, self.answer)
         self.clues.append(clue)
         if clue.correct or len(self.clues) >= 6:
+            logger.debug('Game Complete!')
             self.running = False
             self.victory = clue.correct
         return clue
