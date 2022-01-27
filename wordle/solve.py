@@ -168,6 +168,13 @@ class BruteForce(Strategy):
         logger.info('Best word is %s', ans)
         return ans
 
+    @staticmethod
+    def check_one_for_profile():
+        words = get_words()
+        start_time = time.monotonic()
+        while time.monotonic() - start_time < 10:
+            BruteForce.check_one('check', words)
+
 
 class NoisyList:
     def __init__(self, words):

@@ -1,4 +1,7 @@
 from argparse import ArgumentParser
+from cProfile import Profile
+from io import StringIO
+from pstats import Stats, SortKey
 import logging
 import time
 
@@ -12,10 +15,14 @@ if __name__ == "__main__":
     parser.add_argument('--method', action='store', default=None)
     parser.add_argument('--all-words', action='store_true')
     parser.add_argument('--time', action='store_true')
+    parser.add_argument('--profile', action='store_true')
     parser.add_argument('--verbose', '-v', action='count', default=0)
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO - (args.verbose * 10))
     logging.addLevelName(5, 'spam')
+    if args.profile:
+        profiler = Profile()
+        profiler.enable()
     if args.time:
         start_time = time.monotonic()
     if args.strategy is None:
@@ -42,3 +49,9 @@ if __name__ == "__main__":
             callable()
     if args.time:
         print(f'{time.monotonic() - start_time}s elapsed.')
+    if args.profile:
+        profiler.disable()
+        stream = StringIO()
+        stats = Stats(profiler, stream=stream).sort_stats(SortKey.CUMULATIVE)
+        stats.print_stats()
+        print(stream.getvalue())
