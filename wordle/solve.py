@@ -16,21 +16,27 @@ class Strategy:
         raise NotImplementedError
 
     def simulate_all_games(self) -> dict[int: list[str]]:
+        start = time.monotonic()
         all_words = get_words()
         logger.info(
             "Simulating all %s games.",
             len(all_words)
         )
         results = defaultdict(list)
-        incr = 0
+        full_incr = len(all_words) / 100
+        incr = full_incr
         count = 0
         for word in all_words:
             results[self.simulate_game(word)].append(word)
             count += 1
             incr -= 1
             if incr <= 0:
-                incr = len(all_words) / 10
-                logger.info(f'Simulated {count} games...')
+                incr = full_incr
+                logger.info(
+                    'Simulated %d games, %.1f min elapsed',
+                    count,
+                    (time.monotonic() - start) / 60,
+                )
         logger.info("Our score is:")
         logger.info(sorted({val: len(words) for val, words in results.items()}))
         logger.info("We got these words in 1 guess:")
@@ -44,7 +50,6 @@ class Strategy:
         self.initialize_game(answer)
         while self.game_instance.running:
             self.simulate_turn()
-        logger.info('\n%s', self.game_instance)
         if self.game_instance.victory:
             return len(self.game_instance.clues)
         else:

@@ -44,6 +44,7 @@ if __name__ == "__main__":
                 solver_inst.simulate_all_games()
             else:
                 solver_inst.simulate_game(args.word)
+                print(solver_inst.game_instance)
         else:
             callable = getattr(SolverClass, args.method)
             callable()
