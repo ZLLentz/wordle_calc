@@ -32,11 +32,16 @@ class Strategy:
             incr -= 1
             if incr <= 0:
                 incr = full_incr
-                logger.info(
-                    'Simulated %d games, %.1f min elapsed',
-                    count,
-                    (time.monotonic() - start) / 60,
-                )
+                level = logging.INFO
+            else:
+                level = logging.DEBUG
+            logger.log(
+                level,
+                'Simulated %d/%d games, %.1f min elapsed',
+                count,
+                len(all_words),
+                (time.monotonic() - start) / 60,
+            )
         logger.info("Our score is:")
         logger.info(sorted({val: len(words) for val, words in results.items()}))
         logger.info("We got these words in 1 guess:")
@@ -134,7 +139,7 @@ class BruteForce(Strategy):
             word for word in self.all_words
             if not any(char in guessed for char in word)
         ]
-        logger.debug('Likely guesses are %s', likely)
+        logger.debug('%d likely guesses: %s', len(likely), likely)
         return likely
     
     @staticmethod
