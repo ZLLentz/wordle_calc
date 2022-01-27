@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import time
 
 from .game import SingleGame
 from . import solve
@@ -9,7 +10,10 @@ if __name__ == "__main__":
     parser.add_argument('--strategy', action='store', default=None)
     parser.add_argument('--method', action='store', default=None)
     parser.add_argument('--all-words', action='store_true')
+    parser.add_argument('--time', action='store_true')
     args = parser.parse_args()
+    if args.time:
+        start_time = time.monotonic()
     if args.strategy is None:
         game_instance = SingleGame.begin(args.word)
         print()
@@ -32,3 +36,5 @@ if __name__ == "__main__":
         else:
             callable = getattr(SolverClass, args.method)
             callable()
+    if args.time:
+        print(f'{time.monotonic() - start_time}s elapsed.')
