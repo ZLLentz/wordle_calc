@@ -65,7 +65,7 @@ def prune_words(words: list[str], clues: list[WordEval]) -> list[str]:
     for word in words:
         if all(clue.allows(word) for clue in clues):
             new_words.append(word)
-    logger.debug('Remaining words: %s', new_words)
+    logger.debug('%d words remaining: %s', len(new_words), new_words)
     return new_words
 
 
@@ -116,10 +116,27 @@ class BruteForce(Strategy):
             return self.words[0]
         if len(self.game_instance.clues) == 0:
             return self.precalculated
+        if len(self.words) > 100:
+            return self.brute_force(
+                self.words,
+                self.get_likely_guesses(),
+            )
         return self.brute_force(self.words, self.all_words)
+
+    def get_likely_guesses(self) -> list[str]:
+        guessed = ''.join(clue.word for clue in self.game_instance.clues)
+        likely = [
+            word for word in self.all_words
+            if not any(char in guessed for char in word)
+        ]
+        logger.debug('Likely guesses are %s', likely)
+        return likely
     
     @staticmethod
-    def brute_force(words, all_words):
+    def brute_force(
+        words: list[str],
+        all_words: list[str],
+    ) -> str:
         cpus = multiprocessing.cpu_count() - 1
         with multiprocessing.Pool(cpus) as pool:
             scores = pool.imap_unordered(
@@ -133,7 +150,11 @@ class BruteForce(Strategy):
             best_score = 0
             for word, score in scores:
                 if score > best_score:
-                    logger.debug("New record! Score for %s is %s!", word, score)
+                    logger.debug(
+                        "New record! Score for %s is %s!",
+                        word,
+                        score,
+                    )
                     best_word = word
                     best_score = score
         return best_word
