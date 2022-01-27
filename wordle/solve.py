@@ -48,6 +48,8 @@ class Strategy:
         logger.info(results[1])
         logger.info("We got these words in 2 guesses:")
         logger.info(results[2])
+        logger.info("We got these words in 6 guesses, nearly failed!")
+        logger.info(results[6])
         logger.info("We failed to solve these words:")
         logger.info(results[7])
 
