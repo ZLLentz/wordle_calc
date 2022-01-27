@@ -45,14 +45,14 @@ class WordEval:
 
     def allows(self, word: str) -> bool:
         for guess, ans, eval in zip(word, self.word, self.eval):
-            if eval == LetterEval.GOOD:
-                if guess != ans:
+            if eval == LetterEval.WRONG:
+                if ans in word:
                     return False
             elif eval == LetterEval.MOVED:
                 if guess == ans or ans not in word:
                     return False
-            elif eval == LetterEval.WRONG:
-                if ans in word:
+            elif eval == LetterEval.GOOD:
+                if guess != ans:
                     return False
         return True
 
