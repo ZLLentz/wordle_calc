@@ -1,17 +1,90 @@
 # Wordle Calc
 This is a pet project to help me understand what kinds of strategies are most effective for solving Wordle puzzles.
 You can play Wordle at https://www.powerlanguage.co.uk/wordle/.
-I am not affiliated with Wordle nor do I have any rights to the game.
+I am not affiliated with Wordle nor do I have any rights to the game. The creator of Wordle currently does not intend to monetize it.
 
-Wordle's source code comes with a Copyright (c) by Microsoft, along with a very standard open source license that I've also included in this repository. That means it should be OK to make projects like this so long as you're not creating a copy or near copy of Wordle for commercial reasons. I also think it is OK for you to use/edit my code here for your own purposes, again being sure not to violate Microsoft's copyright.
+Feel free to use this code for whatever purpose you'd like. Hopefully you find it interesting.
 
 ## What is this exactly?
 This Python code can be used to:
 - Play a worse version of Wordle in your terminal, with a random answer word or with a specific word (perhaps, to replay a past day of Wordle?).
 - Check how a particular "Strategy" would fare in general or against a particular answer.
-- Analyze a game of Wordle you played previously, to see how a particular Strategy would evaluate your choices.
+- Analyze a game of Wordle you played previously, to see how the computer would evaluate your choices.
 
 This Python code can't efficiently be used to cheat and help you complete your daily Wordle puzzle. That wouldn't be much fun anyway.
+
+## Sample Usage
+Starting a game:
+```
+python -m wordle
+
+    Wordle    
+---------------
+
+
+guess
+
+    Wordle
+---------------
+ g  u  e  s  s
+```
+
+See how a strategy would approach a specific game:
+```
+python -m wordle --word apple --strategy BruteForce
+    Wordle    
+---------------
+ t :a: r :e: s
+ b :l: i  n  d
+ m :e::a:|l| y
+|a||p||p||l||e|
+```
+
+Ask for feedback about one of your games:
+```
+python -m wordle --word penny --analyze haiku stole hyena funny penny
+
+Analyzing this game for answer penny:
+
+    Wordle
+---------------
+ h  a  i  k  u
+ s  t  o  l :e:
+ h :y::e:|n| a
+ f  u |n||n||y|
+|p||e||n||n||y|
+
+The first guess was "haiku".
+This decreased the number of possible answers from 5757 to 1174.
+This removed 79.61% of the options.
+The brute force algorithm picked "tares".
+Picking "tares" would have dropped the count to 239 instead of 1174.
+
+The second guess was "stole".
+This decreased the number of possible answers from 1174 to 69.
+This removed 94.12% of the options.
+The brute force algorithm picked "roles".
+Picking "roles" would have dropped the count to 28 instead of 69.
+
+The third guess was "hyena".
+This decreased the number of possible answers from 69 to 4.
+This removed 94.20% of the options.
+The brute force algorithm picked "nerdy".
+Picking "nerdy" would have dropped the count to 4 instead of 4.
+After guessing nerdy, the only possible answers are "penny", "jenny", "weeny", "fenny"
+
+The fourth guess was "funny".
+Before this guess, the remaining words were "penny", "ferny", "jenny", "fenny"
+This decreased the number of possible answers from 4 to 2.
+This removed 50.00% of the options.
+The brute force algorithm picked "proof".
+Picking "proof" would have dropped the count to 1 instead of 2.
+After guessing "proof", the only possible answer is "penny"
+
+The fifth guess "penny" was correct!
+There were 2 left to choose from.
+The remaining words were "penny", "jenny"
+```
 
 ## Caveats
 - This repository doesn't properly follow the rules of Wordle quite how it is done in the real game. I haven't bothered fixing edge cases with multiple letters, for example, which are hinted differently in Wordle than they are here.
