@@ -91,6 +91,7 @@ The remaining words were "penny", "jenny"
 - The brute force algorithm gives the best results, but is very slow to run. It tries to leverage multiprocessing to speed itself up, which typically pegs your CPU, and it tries to take some shortcuts but still ends up being slow.
 - Only the brute force algorithm is currently available for the analysis
 - The analysis differs slightly from the way the algorithm plays the game itself, due to poor architecture choices.
+- I have not bothered to document the source code here to the extent I would for a professional project. Browse at your own risk.
 
 ## Word lists
 - dictionary.txt is the actual list that Wordle uses to validate your guesses.
