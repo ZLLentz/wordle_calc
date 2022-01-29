@@ -1,23 +1,47 @@
 import logging
 import multiprocessing
 import time
-from collections import defaultdict
 from functools import partial
+from typing import Optional
 
 from .game import SingleGame, WordEval
-from .words import get_words
+from .words import WordList
 
 logger = logging.getLogger(__name__)
 logger.spam = partial(logger.log, 5)
 
 
 class Strategy:
+    hardcoded = ()
+
+    def __init__(
+        self,
+        valid_guesses: WordList = WordList.ALL,
+        valid_answers: WordList = WordList.ALL,
+        strategy_guesses: WordList = WordList.ALL,
+        strategy_answers: WordList = WordList.ALL,
+    ):
+        self.valid_guesses = valid_guesses
+        self.valid_answers = valid_answers
+        self.strategy_guesses = strategy_guesses
+        self.strategy_answers = strategy_answers
+
     def guess(self) -> str:
         raise NotImplementedError
 
+    def default_guess(self) -> Optional[str]:
+        if len(self.remaining_words) == 0:
+            return 'fails'
+        if len(self.remaining_words) <= 2:
+            return self.remaining_words[0]
+        try:
+            return self.hardcoded[len(self.game_instance.clues)]
+        except IndexError:
+            return
+
     def simulate_all_games(self) -> dict[int: list[str]]:
         start = time.monotonic()
-        all_words = get_words()
+        all_words = self.strategy_answers.get()
         logger.info(
             "Simulating all %s games.",
             len(all_words)
@@ -53,7 +77,7 @@ class Strategy:
         logger.info("We failed to solve these words:")
         logger.info(results[7])
 
-    def simulate_game(self, answer) -> int:
+    def simulate_game(self, answer: str) -> int:
         self.initialize_game(answer)
         while self.game_instance.running:
             self.simulate_turn()
@@ -62,14 +86,21 @@ class Strategy:
         else:
             return 7
 
-    def initialize_game(self, answer):
-        self.words = get_words()
-        self.game_instance = SingleGame.begin(answer)
+    def initialize_game(self, answer: str):
+        self.remaining_words = self.strategy_guesses.get()
+        self.game_instance = SingleGame.begin(
+            answer=answer,
+            valid_guesses=self.valid_guesses,
+            valid_answers=self.valid_answers,
+        )
 
     def simulate_turn(self):
-        self.game_instance.make_guess(self.guess())
+        guess = self.default_guess()
+        if guess is None:
+            guess = self.guess()
+        self.game_instance.make_guess(guess)
         logger.debug('\n%s', self.game_instance)
-        self.words = prune_words(self.words, self.game_instance.clues)
+        self.remaining_words = prune_words(self.remaining_words, self.game_instance.clues)
 
 
 def prune_words(words: list[str], clues: list[WordEval]) -> list[str]:
@@ -87,28 +118,9 @@ class InOrder(Strategy):
     """
     def guess(self) -> str:
         try:
-            return self.words[0]
+            return self.remaining_words[0]
         except IndexError:
             return 'fails'
-
-
-class SudokuChannel(Strategy):
-    """
-    Guess the words the Sudoku guys recommend
-    Until only one word is possible or until all are used
-    """
-    def guess(self) -> str:
-        if len(self.words) == 0:
-            return 'fails'
-        if len(self.words) <= 2:
-            return self.words[0]
-        if len(self.game_instance.clues) == 0:
-            return 'siren'
-        if len(self.game_instance.clues) == 1:
-            return 'octal'
-        if len(self.game_instance.clues) == 2:
-            return 'dumpy'
-        return self.words[0]
 
 
 class BruteForce(Strategy):
@@ -116,29 +128,29 @@ class BruteForce(Strategy):
     Pick the word with the highest avg possible words removed
     for all the possible answers.
     """
-    precalculated = 'tares'
-
-    def __init__(self):
-        self.all_words = get_words()
+    hardcoded = ('tares',)
 
     def guess(self) -> str:
-        if len(self.words) == 0:
+        if len(self.remaining_words) == 0:
             return 'fails'
-        if len(self.words) <= 2:
-            return self.words[0]
+        if len(self.remaining_words) <= 2:
+            return self.remaining_words[0]
         if len(self.game_instance.clues) == 0:
             return self.precalculated
-        if len(self.words) > 100:
+        if len(self.remaining_words) > 100:
             return self.brute_force(
-                self.words,
+                self.remaining_words,
                 self.get_likely_guesses(),
             )
-        return self.brute_force(self.words, self.all_words)
+        return self.brute_force(
+            self.remaining_words,
+            self.strategy_answers.get(),
+        )
 
     def get_likely_guesses(self) -> list[str]:
         guessed = ''.join(clue.word for clue in self.game_instance.clues)
         likely = [
-            word for word in self.all_words
+            word for word in self.strategy_answers.get()
             if not any(char in guessed for char in word)
         ]
         logger.debug('%d likely guesses: %s', len(likely), likely)
@@ -172,14 +184,14 @@ class BruteForce(Strategy):
         return best_word
 
     @staticmethod
-    def _check_proc(word, remaining_ok) -> tuple[str, int]:
+    def _check_proc(word: str, remaining_ok: list[str]) -> tuple[str, int]:
         return word, BruteForce.check_one(
             word,
             remaining_ok,
         )
 
     @staticmethod
-    def check_one(word, remaining_ok) -> int:
+    def check_one(word: str, remaining_ok: list[str]) -> int:
         word_score = 0
         for possibility in remaining_ok:
             # If the answer was possibility, how many words are eliminated
@@ -194,28 +206,31 @@ class BruteForce(Strategy):
         return word_score
 
     @staticmethod
-    def precompute() -> str:
+    def precompute(
+        guesses: WordList = WordList.ALL,
+        answers: WordList = WordList.ALL,
+    ) -> str:
         logger.info('Running precompute...')
-        words = get_words()
-        ans = BruteForce.brute_force(words, words)
+        ans = BruteForce.brute_force(answers.get(), guesses.get())
         logger.info('Best word is %s', ans)
         return ans
 
     @staticmethod
-    def check_one_for_profile():
-        words = get_words()
+    def check_one_for_profile(
+        guesses: WordList = WordList.ALL,
+    ):
         start_time = time.monotonic()
         while time.monotonic() - start_time < 10:
-            BruteForce.check_one('check', words)
+            BruteForce.check_one('check', guesses.get())
 
 
 class NoisyList:
     def __init__(self, words):
-        self.words = words
+        self.remaining_words = words
         self.reinit()
 
     def reinit(self):
-        self._iter_words = iter(self.words)
+        self._iter_words = iter(self.remaining_words)
         self.start = time.monotonic()
         self.count = 0
 
@@ -230,7 +245,14 @@ class NoisyList:
             'Doing %s, (%d / %d), %.2f mins elapsed',
             word,
             self.count,
-            len(self.words),
+            len(self.remaining_words),
             (time.monotonic() - self.start) / 60,
         )
         return word
+
+
+class SudokuChannel(BruteForce):
+    """
+    Guess the words the Sudoku guys recommend, then brute force it
+    """
+    hardcoded = ('siren', 'octal')

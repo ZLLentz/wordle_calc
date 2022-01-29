@@ -6,7 +6,7 @@ from typing import Optional
 from random import choice
 import logging
 
-from .words import get_words
+from .words import WordList
 
 logger = logging.getLogger(__name__)
 
@@ -92,14 +92,18 @@ class SingleGame:
     victory: bool = False
 
     @classmethod
-    def begin(cls, answer: Optional[str] = None) -> SingleGame:
-        words = get_words()
+    def begin(
+        cls,
+        answer: Optional[str] = None,
+        valid_guesses: WordList = WordList.ALL,
+        valid_answers: WordList = WordList.ALL,
+    ) -> SingleGame:
         if answer is None:
-            answer = choice(words)
+            answer = choice(valid_answers.get())
         return SingleGame(
             answer=answer,
             clues=[],
-            words=words,
+            words=valid_guesses.get(),
         )
 
     def make_guess(self, guess: str) -> Optional[WordEval]:
