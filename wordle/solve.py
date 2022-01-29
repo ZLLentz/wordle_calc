@@ -18,12 +18,10 @@ class Strategy:
         self,
         valid_guesses: WordList = WordList.ALL,
         valid_answers: WordList = WordList.ALL,
-        strategy_guesses: WordList = WordList.ALL,
         strategy_answers: WordList = WordList.ALL,
     ):
         self.valid_guesses = valid_guesses
         self.valid_answers = valid_answers
-        self.strategy_guesses = strategy_guesses
         self.strategy_answers = strategy_answers
 
     def guess(self) -> str:
@@ -42,12 +40,13 @@ class Strategy:
     def simulate_all_games(self) -> dict[int: list[str]]:
         start = time.monotonic()
         all_words = self.strategy_answers.get()
+        game_count = len(all_words)
         logger.info(
             "Simulating all %s games.",
-            len(all_words)
+            game_count,
         )
         results = {1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: []}
-        full_incr = len(all_words) / 100
+        full_incr = game_count / 100
         incr = full_incr
         count = 0
         for word in all_words:
@@ -63,11 +62,26 @@ class Strategy:
                 level,
                 'Simulated %d/%d games, %.1f min elapsed',
                 count,
-                len(all_words),
+                game_count,
                 (time.monotonic() - start) / 60,
             )
         logger.info("Our score is:")
-        logger.info({val: len(words) for val, words in results.items()})
+        scores = {val: len(words) for val, words in results.items()}
+        logger.info(scores)
+        win_count = game_count - scores[7]
+        logger.info(
+            "We won %d out of %d games for a win rate of %.2f%%",
+            win_count,
+            game_count,
+            win_count / game_count * 100,
+        )
+        logger.info(
+            "In our wins, we had an average score of %.2f guesses per game.",
+            (
+                sum(key * value for key, value in scores.items() if key != 7)
+                / win_count
+            )
+        )
         logger.info("We got these words in 1 guess:")
         logger.info(results[1])
         logger.info("We got these words in 2 guesses:")
@@ -87,7 +101,7 @@ class Strategy:
             return 7
 
     def initialize_game(self, answer: str):
-        self.remaining_words = self.strategy_guesses.get()
+        self.remaining_words = self.strategy_answers.get()
         self.game_instance = SingleGame.begin(
             answer=answer,
             valid_guesses=self.valid_guesses,
@@ -128,7 +142,15 @@ class BruteForce(Strategy):
     Pick the word with the highest avg possible words removed
     for all the possible answers.
     """
-    hardcoded = ('tares',)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.hardcoded:
+            if self.strategy_answers == WordList.ALL:
+                self.hardcoded = ('later',)
+            elif self.strategy_answers == WordList.SGB:
+                self.hardcoded = ('tares',)
+            elif self.strategy_answers == WordList.CHEAT:
+                self.hardcoded = ('roate',)
 
     def guess(self) -> str:
         if len(self.remaining_words) == 0:
@@ -216,6 +238,10 @@ class BruteForce(Strategy):
         return ans
 
     @staticmethod
+    def precompute_cheat():
+        BruteForce.precompute(answers=WordList.CHEAT)
+
+    @staticmethod
     def check_one_for_profile(
         guesses: WordList = WordList.ALL,
     ):
@@ -255,4 +281,4 @@ class SudokuChannel(BruteForce):
     """
     Guess the words the Sudoku guys recommend, then brute force it
     """
-    hardcoded = ('siren', 'octal')
+    hardcoded = ('siren', 'octal', 'dumpy')

@@ -8,6 +8,8 @@ import time
 from . import solve
 from .analyze import user_analysis
 from .game import SingleGame
+from .solve import Strategy
+from .words import WordList
 
 if __name__ == "__main__":
     parser = ArgumentParser('world_calc')
@@ -18,6 +20,7 @@ if __name__ == "__main__":
     parser.add_argument('--time', action='store_true')
     parser.add_argument('--profile', action='store_true')
     parser.add_argument('--analyze', action='extend', nargs='*')
+    parser.add_argument('--use-cheat-list', action='store_true')
     parser.add_argument('--verbose', '-v', action='count', default=0)
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO - (args.verbose * 10))
@@ -27,10 +30,17 @@ if __name__ == "__main__":
         profiler.enable()
     if args.time:
         start_time = time.monotonic()
+    if args.use_cheat_list:
+        answers = WordList.CHEAT
+    else:
+        answers = WordList.ALL
     if args.strategy is not None:
         SolverClass = getattr(solve, args.strategy)
         if args.method is None:
-            solver_inst = SolverClass()
+            solver_inst = SolverClass(
+                valid_answers=answers,
+                strategy_answers=answers,
+            )
             if args.all_words:
                 solver_inst.simulate_all_games()
             else:
@@ -40,12 +50,18 @@ if __name__ == "__main__":
             callable = getattr(SolverClass, args.method)
             callable()
     elif args.analyze:
-        game_instance = SingleGame.begin(args.word)
+        game_instance = SingleGame.begin(
+            args.word,
+            valid_answers=answers,
+        )
         for word in args.analyze:
             game_instance.make_guess(word)
         user_analysis(game_instance)
     else:
-        game_instance = SingleGame.begin(args.word)
+        game_instance = SingleGame.begin(
+            args.word,
+            valid_answers=WordList.CHEAT,
+        )
         print()
         while game_instance.running:
             print(game_instance)
