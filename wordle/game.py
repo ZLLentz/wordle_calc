@@ -109,6 +109,7 @@ class SingleGame:
     def make_guess(self, guess: str) -> Optional[WordEval]:
         logger.debug('Guessed %s', guess)
         if guess not in self.words:
+            logger.error('%s is not a valid word!', guess)
             return None
         clue = WordEval.from_guess(guess, self.answer)
         self.clues.append(clue)

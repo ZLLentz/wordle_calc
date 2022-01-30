@@ -1,17 +1,17 @@
 from .game import SingleGame
 from .solve import BruteForce, prune_words
-from .words import get_words
+from .words import WordList
 
 NUMBER_WORDS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth']
 
-def user_analysis(game_instance: SingleGame):
+def user_analysis(game_instance: SingleGame, strategy_answers: WordList):
     print()
     print(f'Analyzing this game for answer {game_instance.answer}:')
     print()
     print(game_instance)
     print()
-    all_words = get_words()
-    words = all_words
+    all_words = game_instance.words
+    words = strategy_answers.get()
     for num, clue in enumerate(game_instance.clues):
         prev_words = words
         words = prune_words(words, [clue])
@@ -56,11 +56,11 @@ def user_analysis(game_instance: SingleGame):
                     pct = (1 - (new_count / prev_count)) * 100
                     print(f'This removed {pct:.2f}% of the options.')
             if num == 0:
-                optimal = BruteForce.precalculated
+                optimal = BruteForce.hardcoded_map[strategy_answers][0]
             elif prev_count <= 2:
                 optimal = prev_words[0]
             else:
-                optimal = BruteForce.brute_force(prev_words, all_words)
+                optimal = BruteForce.brute_force(tuple(prev_words), tuple(all_words))
             if clue.word == optimal:
                 print('This is the same word as the algorithm!')
             else:

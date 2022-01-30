@@ -1,7 +1,7 @@
 import logging
 import multiprocessing
 import time
-from functools import partial
+from functools import cache, partial
 from typing import Optional
 
 from .game import SingleGame, WordEval
@@ -142,31 +142,25 @@ class BruteForce(Strategy):
     Pick the word with the highest avg possible words removed
     for all the possible answers.
     """
+    hardcoded_map = {
+        WordList.ALL: ('later',),
+        WordList.SGB: ('tares',),
+        WordList.CHEAT: ('roate',),
+    }
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not self.hardcoded:
-            if self.strategy_answers == WordList.ALL:
-                self.hardcoded = ('later',)
-            elif self.strategy_answers == WordList.SGB:
-                self.hardcoded = ('tares',)
-            elif self.strategy_answers == WordList.CHEAT:
-                self.hardcoded = ('roate',)
+            self.hardcoded = self.hardcoded_map[self.strategy_answers]
 
     def guess(self) -> str:
-        if len(self.remaining_words) == 0:
-            return 'fails'
-        if len(self.remaining_words) <= 2:
-            return self.remaining_words[0]
-        if len(self.game_instance.clues) == 0:
-            return self.precalculated
         if len(self.remaining_words) > 100:
             return self.brute_force(
-                self.remaining_words,
-                self.get_likely_guesses(),
+                tuple(self.remaining_words),
+                tuple(self.get_likely_guesses()),
             )
         return self.brute_force(
-            self.remaining_words,
-            self.strategy_answers.get(),
+            tuple(self.remaining_words),
+            tuple(self.strategy_answers.get()),
         )
 
     def get_likely_guesses(self) -> list[str]:
@@ -179,9 +173,10 @@ class BruteForce(Strategy):
         return likely
     
     @staticmethod
+    @cache
     def brute_force(
-        words: list[str],
-        all_words: list[str],
+        words: tuple[str],
+        all_words: tuple[str],
     ) -> str:
         cpus = multiprocessing.cpu_count() - 1
         with multiprocessing.Pool(cpus) as pool:

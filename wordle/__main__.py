@@ -56,7 +56,7 @@ if __name__ == "__main__":
         )
         for word in args.analyze:
             game_instance.make_guess(word)
-        user_analysis(game_instance)
+        user_analysis(game_instance, answers)
     else:
         game_instance = SingleGame.begin(
             args.word,
