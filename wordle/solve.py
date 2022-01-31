@@ -46,20 +46,11 @@ class Strategy:
             game_count,
         )
         results = {1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: []}
-        full_incr = game_count / 100
-        incr = full_incr
         count = 0
-        for word in all_words:
+        for num, word in enumerate(all_words):
             results[self.simulate_game(word)].append(word)
             count += 1
-            incr -= 1
-            if incr <= 0:
-                incr = full_incr
-                level = logging.INFO
-            else:
-                level = logging.DEBUG
-            logger.log(
-                level,
+            logger.info(
                 'Simulated %d/%d games, %.1f min elapsed',
                 count,
                 game_count,
@@ -228,7 +219,10 @@ class BruteForce(Strategy):
         answers: WordList = WordList.ALL,
     ) -> str:
         logger.info('Running precompute...')
-        ans = BruteForce.brute_force(answers.get(), guesses.get())
+        ans = BruteForce.brute_force(
+            tuple(answers.get()),
+            tuple(guesses.get()),
+        )
         logger.info('Best word is %s', ans)
         return ans
 
@@ -277,3 +271,25 @@ class SudokuChannel(BruteForce):
     Guess the words the Sudoku guys recommend, then brute force it
     """
     hardcoded = ('siren', 'octal', 'dumpy')
+
+
+class BruteForceYolo(BruteForce):
+    """
+    Always guess something that could potentially be an answer.
+    No further pruning of the guess tree.
+    """
+    hardcoded_map = BruteForce.hardcoded_map.copy()
+    hardcoded_map[WordList.CHEAT] = ('raise',)
+
+    def guess(self) -> str:
+        return self.brute_force(
+            tuple(self.remaining_words),
+            tuple(self.remaining_words),
+        )
+
+    @staticmethod
+    def precompute_yolo_cheat():
+        BruteForce.precompute(
+            guesses=WordList.CHEAT,
+            answers=WordList.CHEAT,
+        )
