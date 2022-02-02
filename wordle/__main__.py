@@ -7,7 +7,7 @@ import time
 
 from . import solve
 from .analyze import user_analysis
-from .antagonize import get_winning_absurdle_games
+from .antagonize import find_best_absurdle_paths
 from .game import SingleGame
 from .words import WordList
 
@@ -59,11 +59,11 @@ if __name__ == "__main__":
             game_instance.make_guess(word)
         user_analysis(game_instance, answers)
     elif args.solve_antagonize:
-        winning_games = get_winning_absurdle_games()
+        winning_games = find_best_absurdle_paths()
         print('Won the following absurdle games:')
-        for winning in winning_games:
+        for clues, _ in winning_games:
             print()
-            for hint in winning:
+            for hint in clues:
                 print(hint)
             print()
 
