@@ -282,10 +282,16 @@ class BruteForceYolo(BruteForce):
     hardcoded_map[WordList.CHEAT] = ('raise',)
 
     def guess(self) -> str:
-        return self.brute_force(
+        yolo_word = self.brute_force(
             tuple(self.remaining_words),
             tuple(self.remaining_words),
         )
+        yolo_score = self.check_one(yolo_word, self.remaining_words)
+        if yolo_score / len(self.remaining_words) > len(self.remaining_words) / 2:
+            return yolo_word
+        else:
+            logger.debug('Yolo guess was too risky')
+            return super().guess()
 
     @staticmethod
     def precompute_yolo_cheat():
