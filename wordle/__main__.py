@@ -7,8 +7,8 @@ import time
 
 from . import solve
 from .analyze import user_analysis
+from .antagonize import get_winning_absurdle_games
 from .game import SingleGame
-from .solve import Strategy
 from .words import WordList
 
 if __name__ == "__main__":
@@ -21,6 +21,7 @@ if __name__ == "__main__":
     parser.add_argument('--profile', action='store_true')
     parser.add_argument('--analyze', action='extend', nargs='*')
     parser.add_argument('--use-cheat-list', action='store_true')
+    parser.add_argument('--solve-antagonize', action='store_true')
     parser.add_argument('--verbose', '-v', action='count', default=0)
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO - (args.verbose * 10))
@@ -57,6 +58,15 @@ if __name__ == "__main__":
         for word in args.analyze:
             game_instance.make_guess(word)
         user_analysis(game_instance, answers)
+    elif args.solve_antagonize:
+        winning_games = get_winning_absurdle_games()
+        print('Won the following absurdle games:')
+        for winning in winning_games:
+            print()
+            for hint in winning:
+                print(hint)
+            print()
+
     else:
         game_instance = SingleGame.begin(
             args.word,
